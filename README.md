@@ -13,26 +13,29 @@ Usage
 
 After installation and setup, using the connection manager and query manager is simple.
 
-    <?php
-    use hugopakula\SimpleDB;
+```php
+<?php
+use hugopakula\SimpleDB;
     
-    $SQL = new SimpleDB\SQL();
-    $getUsers = $SQL->query('SELECT id, full_name FROM users');
-    $users = $getUsers->getResult();
-    
-    foreach($users as $user) {
-        echo 'id: ' . $user['id'] . "\t\t"
-        . 'name: ' . $user['full_name'] . "\n";
-    }
+$SQL = new SimpleDB\SQL();
+$getUsers = $SQL->query('SELECT id, full_name FROM users');
+$users = $getUsers->getResult();
+
+foreach($users as $user) {
+    echo 'id: ' . $user['id'] . "\t\t"
+    . 'name: ' . $user['full_name'] . "\n";
+}
+```
 
 The SQL query manager also supports escaped values in queries. When retrieving a single result, pass `$single: true` to the query constructor, or connection querier.
+```php
+<?php
+$currentUser = 12;
+$user = $SQL->query('SELECT full_name FROM users WHERE id = ?', [$currentUser], true);
 
-    <?php
-    $currentUser = 12;
-    $user = $SQL->query('SELECT full_name FROM users WHERE id = ?', [$currentUser], true);
-    
-    echo 'id: ' . $currentUser . "\t\t"
-    . 'name: ' . $user['full_name'] . "\n"; 
+echo 'id: ' . $currentUser . "\t\t"
+. 'name: ' . $user['full_name'] . "\n"; 
+```
 
 Versioning
 ==========
