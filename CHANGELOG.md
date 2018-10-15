@@ -3,7 +3,12 @@
 The API adheres to [Semantic Versioning v2](https://semver.org/spec/v2.0.0.html), and patch/minor versions should be considered backwards-compatible and stable (unless otherwise specified/yanked).
 
 ## [Unreleased]
-
+### Added
+- [x] Add generic query abstraction
+- [x] Add examples to `/demo` and provide sample credentials file
+- [ ] Add DB type variance and abstraction for connection manager
+- [ ] Add named escape values to SQL Query manager
+- [ ] Abstract credentials loader
 
 ## [0.5.0] - 2018-10-14
 ### Added

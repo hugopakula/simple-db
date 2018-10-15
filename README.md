@@ -43,8 +43,8 @@ Versioning
 This class is currently in pre-release versions (<1.0.0), however, will adhere to the [Semantic Versioning v2.0.0](https://semver.org/spec/v2.0.0.html) specification when it reaches final release stage. A [changelog](CHANGELOG.md) is provided in this repo for historic reference.
 
 **To-do**
-- [ ] Add examples to `/demo` and provide sample credentials file
+- [x] Add examples to `/demo` and provide sample credentials file
 - [ ] Add DB type variance and abstraction for connection manager
-- [ ] Add generic query abstraction
+- [x] Add generic query abstraction
 - [ ] Add named escape values
 - [ ] Abstract credentials loader
