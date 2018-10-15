@@ -8,6 +8,12 @@ Description
 
 Using this class, you can establish and share connections among many queries, re-run queries easily, and easily prevent [SQL Injection](https://en.wikipedia.org/wiki/SQL_injection) attacks.
 
+Currently, the SimpleDb class has high-level implementations for the following database drivers:
+
+- [x] MySQL
+- [ ] MongoDB
+- [ ] PostgreSQL
+
 Usage
 =====
 

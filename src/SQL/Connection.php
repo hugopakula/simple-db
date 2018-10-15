@@ -1,14 +1,12 @@
 <?php
 
-namespace hugopakula\SimpleDB;
+namespace hugopakula\SimpleDB\SQL;
 
-use hugopakula\SimpleDB\SQL\Query;
+use hugopakula\SimpleDB\Database;
 use hugopakula\SimpleDB\Exceptions\RequestException;
 use hugopakula\SimpleDB\Exceptions\RollbackException;
 
-require_once __DIR__ . '/../autoload.php';
-
-class SQL extends Database {
+class Connection extends Database {
     CONST DATABASE_TYPE = 'sql';
     CONST DEFAULT_CONNECTION_PORT = 3306;
     CONST ERROR_DUPLICATE_KEY = '23000';

@@ -3,13 +3,12 @@
 namespace hugopakula\SimpleDB\SQL;
 
 use hugopakula\SimpleDB\Database;
-use hugopakula\SimpleDB\SQL;
 use hugopakula\SimpleDB\Exceptions\RequestException;
 use hugopakula\SimpleDB\Exceptions\RollbackException;
 
 class Query extends \hugopakula\SimpleDB\Query {
     /**
-     * @var null|SQL
+     * @var null|Connection
      */
     private $sql = null;
 
