@@ -44,7 +44,7 @@ This class is currently in pre-release versions (<1.0.0), however, will adhere t
 
 **To-do**
 - [x] Add examples to `/demo` and provide sample credentials file
-- [ ] Add DB type variance and abstraction for connection manager
+- [x] Add DB type variance and abstraction for connection manager
 - [x] Add generic query abstraction
-- [ ] Add named escape values
+- [ ] Add named escape values to SQL Query manager
 - [ ] Abstract credentials loader

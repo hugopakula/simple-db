@@ -6,7 +6,7 @@ The API adheres to [Semantic Versioning v2](https://semver.org/spec/v2.0.0.html)
 ### Added
 - [x] Add generic query abstraction
 - [x] Add examples to `/demo` and provide sample credentials file
-- [ ] Add DB type variance and abstraction for connection manager
+- [x] Add DB type variance and abstraction for connection manager
 - [ ] Add named escape values to SQL Query manager
 - [ ] Abstract credentials loader
 

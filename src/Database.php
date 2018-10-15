@@ -5,7 +5,7 @@ namespace hugopakula\SimpleDB;
 use hugopakula\SimpleDB\Exceptions\RequestException;
 
 abstract class Database {
-    protected static $cons, $commitKeys, $defaultCredentials = [];
+    protected static $cons = [], $commitKeys = [], $defaultCredentials = [];
     protected $conName = null;
     protected $transaction = false;
 
@@ -13,6 +13,11 @@ abstract class Database {
     CONST DEFAULT_CONNECTIONS_LOCATION = __DIR__ . '/../../db_credentials.json';
     CONST DEFAULT_CONNECTION_NAME = 'default';
     CONST DEFAULT_CONNECTION_PORT = null; // Override in extended class
+
+    abstract public function setCon($conName = null, array $altCredentials = []): bool;
+    abstract public function query(string $rawQuery): ?Query;
+    abstract public function commit(string $commitKey = null);
+    abstract public function rollback(RequestException $e = null);
 
     public function __construct(string $conName = null, array $altCredentials = null) {
         self::loadDefaultCredentials(self::DEFAULT_CONNECTIONS_LOCATION, false);
@@ -28,14 +33,31 @@ abstract class Database {
             $this->startTransaction();
     }
 
-    abstract public function setCon($conName = null, array $altCredentials = []): bool;
-    abstract public function getCon(): ?\PDO;
-    abstract public function query(string $rawQuery): ?Query;
+    /**
+     * method: getCon
+     * Returns the current PDO object or null if not set
+     *
+     * @return null|\PDO
+     */
+    public function getCon(): ?\PDO {
+        if(array_key_exists(static::DATABASE_TYPE, static::$cons)) {
+            if(array_key_exists($this->conName, self::$cons[static::DATABASE_TYPE]))
+                return self::$cons[static::DATABASE_TYPE][$this->conName];
+        }
+
+        return null;
+    }
 
     // Transaction management functions
-    abstract public function startTransaction(): bool;
-    abstract public function commit();
-    abstract public function rollback(RequestException $e);
+    public function startTransaction(string $commitKey = null): bool {
+        if(is_null($this->getCommitKey())) {
+            if($this->transaction)
+                $this->rollback();
+
+            if(!is_null($commitKey))
+                $this->setCommitKey($commitKey);
+        }
+    }
 
     protected function setCommitKey(string $commitKey) {
         if(empty(self::$commitKeys[$this->conName]))

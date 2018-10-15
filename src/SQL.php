@@ -52,16 +52,9 @@ class SQL extends Database {
      * @param string $commitKey
      *
      * @return bool
-     * @throws RollbackException
      */
     public function startTransaction(string $commitKey = null): bool {
-        if(is_null($this->getCommitKey())) {
-            if($this->transaction)
-                $this->rollback();
-
-            if(!is_null($commitKey))
-                $this->setCommitKey($commitKey);
-        }
+        parent::startTransaction($commitKey);
 
         if(!$this->getCon()->inTransaction())
             $this->getCon()->beginTransaction();
@@ -105,18 +98,6 @@ class SQL extends Database {
     }
 
     /**
-     * method: getCon
-     * Returns the current PDO object or null if not set
-     *
-     * @return null|\PDO
-     */
-    public function getCon(): ?\PDO {
-        return array_key_exists($this->conName, self::$cons)
-            ? self::$cons[$this->conName]
-            : null;
-    }
-
-    /**
      * method: setCon
      * Sets $this->conName and self::$cons[$this->conName] based on the provided $database.
      * If $database is a string, set con to credentials in self::$defaultCredentials[self::DATABASE_TYPE] at index $database.
@@ -156,7 +137,10 @@ class SQL extends Database {
             // TODO: Add charset variance
             // TODO: Add custom exception for failed connection
 
-            self::$cons[$this->conName] = new \PDO(
+            if(!array_key_exists(self::DATABASE_TYPE, self::$cons))
+                self::$cons[self::DATABASE_TYPE] = [];
+
+            self::$cons[self::DATABASE_TYPE][$this->conName] = new \PDO(
                 $dsn,
                 isset($altCredentials[0]) ? $altCredentials[0] : $credentials['user'],
                 isset($altCredentials[1]) ? $altCredentials[1] : $credentials['pass'],
