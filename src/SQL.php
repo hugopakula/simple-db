@@ -8,14 +8,8 @@ use hugopakula\SimpleDB\Exceptions\RollbackException;
 
 require_once __DIR__ . '/../autoload.php';
 
-class SQL {
-    private static $cons, $defaultCredentials, $commitKeys = [];
-
-    private $database;
-    private $transaction = false;
-
-    CONST DEFAULT_CONNECTIONS_LOCATION = __DIR__ . '/../../sql_credentials.json';
-    CONST DEFAULT_CONNECTION = 'default';
+class SQL extends Database {
+    CONST DATABASE_TYPE = 'sql';
     CONST DEFAULT_CONNECTION_PORT = 3306;
     CONST ERROR_DUPLICATE_KEY = '23000';
 
@@ -26,35 +20,24 @@ class SQL {
      * @param string|null $database
      * @param array|null $altCredentials
      * @throws RequestException
-     * @throws RollbackException
      */
     public function __construct(string $database = null, array $altCredentials = null) {
-        self::loadDefaultCredentials(self::DEFAULT_CONNECTIONS_LOCATION);
-
-        if(is_null($altCredentials) || !isset($altCredentials[0]))
-            $altCredentials = [];
-
-        $db = $this->updateCon($database, $altCredentials);
-        if(!$db)
-            throw new RequestException('Invalid Database.');
-
-        if($this->getCon()->inTransaction())
-            $this->startTransaction();
+        parent::__construct($database, $altCredentials);
     }
 
     /**
      * Method: query
      * Using the current connection, make a new query. Transactions are inherited through the same connection.
      *
-     * @param string $query
+     * @param string $rawQuery
      * @param array $escapeValues
      * @param bool $single
      * @return Query|null
      * @throws RequestException
      * @throws RollbackException
      */
-    public function query(string $query, array $escapeValues = [], bool $single = false): ?Query {
-        $query = new Query($this, $query, empty($escapeValues) ? [] : $escapeValues, $single);
+    public function query(string $rawQuery, array $escapeValues = [], bool $single = false): ?\hugopakula\SimpleDB\Query {
+        $query = new Query($this, $rawQuery, empty($escapeValues) ? [] : $escapeValues, $single);
 
         return $query;
     }
@@ -121,22 +104,6 @@ class SQL {
         }
     }
 
-    private function releaseCommit() {
-        unset(self::$commitKeys[$this->database]);
-    }
-
-    private function setCommitKey(string $commitKey) {
-        if(empty(self::$commitKeys[$this->database]))
-            self::$commitKeys[$this->database] = $commitKey;
-    }
-
-    private function getCommitKey(): ?string {
-        if(array_key_exists($this->database, self::$commitKeys))
-            return self::$commitKeys[$this->database];
-
-        return null;
-    }
-
     /**
      * method: getCon
      * Returns the current PDO object or null if not set
@@ -144,37 +111,42 @@ class SQL {
      * @return null|\PDO
      */
     public function getCon(): ?\PDO {
-        return array_key_exists($this->database, self::$cons)
-            ? self::$cons[$this->database]
+        return array_key_exists($this->conName, self::$cons)
+            ? self::$cons[$this->conName]
             : null;
     }
 
     /**
-     * method: updateCon
-     * Sets $this->database and self::$cons[$this->database] based on the provided $database.
-     * If $database is a string, set con to credentials in self::$defaultCredentials at index $database.
+     * method: setCon
+     * Sets $this->conName and self::$cons[$this->conName] based on the provided $database.
+     * If $database is a string, set con to credentials in self::$defaultCredentials[self::DATABASE_TYPE] at index $database.
      * If $database is an array, it must include indexes: host, user, pass, db.
      * port (optional) - defaults to self::DEFAULT_CONNECTION_PORT
      *
-     * @param null|string|array $database
+     * @param null|string|array $conName
      * @param array $altCredentials
      * @return bool
      */
-    public function updateCon($database = null, array $altCredentials = []): bool {
+    public function setCon($conName = null, array $altCredentials = []): bool {
         $credentials = [];
 
-        if(is_string($database) && array_key_exists($database, self::$defaultCredentials))
-            $credentials = self::$defaultCredentials[$database];
-        else if(is_array($database) && array_key_exists('host', $database) && array_key_exists('user', $database)
-            && array_key_exists('pass', $database) && array_key_exists('db', $database))
-            $credentials = $database;
-        else if(is_null($database))
-            $credentials = self::$defaultCredentials[self::DEFAULT_CONNECTION];
+        if(is_null($conName))
+            $conName = self::DEFAULT_CONNECTION_NAME;
+
+        $dbTypeCredentials = array_key_exists(self::DATABASE_TYPE, self::$defaultCredentials)
+            ? self::$defaultCredentials[self::DATABASE_TYPE]
+            : [];
+
+        if(is_string($conName) && array_key_exists($conName, $dbTypeCredentials))
+            $credentials = $dbTypeCredentials[$conName];
+        else if(is_array($conName) && array_key_exists('host', $conName) && array_key_exists('user', $conName)
+            && array_key_exists('pass', $conName) && array_key_exists('db', $conName))
+            $credentials = $conName;
 
         if(is_array($credentials) && !empty($credentials)) {
-            $this->database = is_string($database)
-                ? $database
-                : (is_null($database) ? self::DEFAULT_CONNECTION : null);
+            $this->conName = is_string($conName)
+                ? $conName
+                : (is_null($conName) ? self::DEFAULT_CONNECTION_NAME : null);
 
             $dsn = 'mysql:host=' . $credentials['host']
             . ';port=' . ($credentials['port'] ?: self::DEFAULT_CONNECTION_PORT)
@@ -184,7 +156,7 @@ class SQL {
             // TODO: Add charset variance
             // TODO: Add custom exception for failed connection
 
-            self::$cons[$this->database] = new \PDO(
+            self::$cons[$this->conName] = new \PDO(
                 $dsn,
                 isset($altCredentials[0]) ? $altCredentials[0] : $credentials['user'],
                 isset($altCredentials[1]) ? $altCredentials[1] : $credentials['pass'],
@@ -195,53 +167,6 @@ class SQL {
             );
 
             return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Example credentials file:
-    {
-        "rooms_api_dev": {
-            "host": "localhost",
-            "user": "sys",
-            "pass": "",
-            "db": "rooms_api"
-        }
-    }
-     *
-     * @param string $file
-     * @return bool
-     */
-    public static function loadDefaultCredentials(string $file): bool {
-        if(!empty(self::$defaultCredentials))
-            return true;
-
-        if(file_exists($file)) {
-            $credentials = file_get_contents($file);
-            if($parsed = json_decode($credentials, true)) {
-                $defaultCredentials = [];
-                self::$defaultCredentials = $defaultCredentials;
-
-                if(!empty($parsed)) {
-                    foreach($parsed as $name => $connection) {
-                        if(array_key_exists('host', $connection) && array_key_exists('user', $connection)
-                            && array_key_exists('pass', $connection) && array_key_exists('db', $connection)) {
-                            $defaultCredentials[$name] = [
-                                'host' => $connection['host'],
-                                'user' => $connection['user'],
-                                'pass' => $connection['pass'],
-                                'db'   => $connection['db'],
-                                'port' => @$connection['port'] ?: self::DEFAULT_CONNECTION_PORT
-                            ];
-                        }
-                    }
-                }
-
-                self::$defaultCredentials = $defaultCredentials;
-                return true;
-            }
         }
 
         return false;

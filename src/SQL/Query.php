@@ -2,42 +2,16 @@
 
 namespace hugopakula\SimpleDB\SQL;
 
+use hugopakula\SimpleDB\Database;
 use hugopakula\SimpleDB\SQL;
 use hugopakula\SimpleDB\Exceptions\RequestException;
 use hugopakula\SimpleDB\Exceptions\RollbackException;
 
-class Query {
+class Query extends \hugopakula\SimpleDB\Query {
     /**
      * @var null|SQL
      */
     private $sql = null;
-    /**
-     * @var null|\PDO
-     */
-    private $db = null;
-
-    /**
-     * @var null|\PDOStatement
-     */
-    private $prevQuery = null;
-    /**
-     * @var null|\PDOStatement
-     */
-    private $query = null;
-
-    private $prevRawQuery = null;
-    private $rawQuery = null;
-
-    /**
-     * @var $prevResult array|null|QueryError
-     * @var $result array|null|QueryError
-     * @var $prevError QueryError|null
-     * @var $error QueryError|null
-     */
-    private $prevResult = null;
-    private $result = null;
-    private $prevError = null;
-    private $error = null;
 
     private $prevEscaped = null;
     private $escaped = null;
@@ -45,14 +19,9 @@ class Query {
     private $prevEscapeValues = null;
     private $escapeValues = null;
 
-    private $prevTransaction = null;
-    private $transaction = null;
-
-    private $executions = 0;
-
     /**
      * Query constructor.
-     * @param SQL $db
+     * @param Database $db
      * @param string $rawQuery
      * @param array $escapeValues
      * @param bool $single
@@ -60,12 +29,12 @@ class Query {
      * @throws RequestException
      * @throws RollbackException
      */
-    public function __construct(SQL &$db, string $rawQuery, array $escapeValues = [], bool $single = false, bool $execute = true) {
+    public function __construct(Database &$db, string $rawQuery, array $escapeValues = [], bool $single = false, bool $execute = true) {
         $this->sql = &$db;
         $this->db = $this->sql->getCon();
 
         if($execute)
-            $this->execute($rawQuery, $escapeValues, $single);
+            $this->executeRaw($rawQuery, $escapeValues, $single);
     }
 
     /**
@@ -83,7 +52,7 @@ class Query {
      * @throws RequestException
      * @throws RollbackException
      */
-    public function execute(string $query = null, array $params = [], bool $single = false) {
+    public function executeRaw(string $query = null, array $params = [], bool $single = false) {
         if($this->getExecutions() > 0)
             $this->makeResultsPreviousResults();
 
@@ -295,7 +264,7 @@ class Query {
         return $this->result;
     }
 
-    public function getError(bool $prev = false): ?QueryError {
+    public function getError(bool $prev = false): ?\hugopakula\SimpleDB\QueryError {
         switch($prev) {
             case true:
                 return $this->prevError instanceof QueryError
